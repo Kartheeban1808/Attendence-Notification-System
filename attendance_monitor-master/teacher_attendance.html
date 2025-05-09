@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CAMS - Web Portal | Dashboard</title>
+    <!-- Add jsPDF library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        height: 100vh;
+      }
+      /* Sidebar styling */
+      .sidebar {
+        width: 250px;
+        background-color: #2b3d71;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+      }
+      .sidebar h3 {
+        margin: 0;
+        padding: 15px;
+        background-color: #4b6bbd;
+        text-align: center;
+      }
+      .sidebar p {
+        font-size: 14px;
+        text-align: center;
+        margin: 10px 0;
+      }
+      .sidebar a {
+        color: #f2f2f2;
+        text-decoration: none;
+        padding: 10px;
+        display: block;
+        margin: 5px 0;
+        border-radius: 4px;
+      }
+      .sidebar a:hover {
+        background-color: #1d2c5b;
+      }
+
+      .sidebar .menu-header-a {
+        background-color: #d9534f;
+        padding: 10px;
+        font-weight: bold;
+        color: white;
+        margin-top: 10px;
+        border-radius: 4px;
+      }
+      /* Main content styling */
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+        background-color: #f1f1f1;
+      }
+      .main-header {
+        background-color: #4aa3d8;
+        color: white;
+        padding: 15px;
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #d4d4d4;
+      }
+      .profile {
+        display: flex;
+        align-items: center;
+      }
+      .profile img {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+      }
+      .container {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: center;
+        border: 1px solid #ddd;
+      }
+      th {
+        background-color: #4aa3d8;
+        color: white;
+      }
+      .btn {
+        padding: 6px 12px;
+        margin: 5px;
+        cursor: pointer;
+        border: none;
+        border-radius: 4px;
+        color: white;
+      }
+      .btn.present {
+        background-color: #28a745;
+      }
+      .btn.absent {
+        background-color: #dc3545;
+      }
+      .btn.disabled {
+        background-color: #ddd;
+        cursor: not-allowed;
+      }
+      .submit-btn,
+      .clear-btn {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      .submit-btn:disabled,
+      .clear-btn:disabled {
+        background-color: #ddd;
+        cursor: not-allowed;
+      }
+      .report-btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-bottom: 10px;
+      }
+      .report-btn:hover {
+        background-color: #e61d1d;
+      }
+      
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 800px;
+        border-radius: 8px;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .close:hover {
+        color: black;
+      }
+      #reportTable {
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+ 
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3>CAMS Web Portal</h3>
+      <p>For any Queries/Comments<br />mail to cams@mkce.ac.in</p>
+
+      <a href="teacher_dashboard.html" class="menu-header">Staff</a>
+
+      <a href="teacher_attendance.html" class="menu-header-a"
+        >Manage Attendance</a
+      >
+      <a href="login.html">Log Out</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="main-header">
+        <span>M. KUMARASAMY COLLEGE OF ENGINEERING, KARUR - 639 113</span>
+        <span>Staff</span>
+      </div>
+      <div class="container">
+        <h2>Manage Student Attendance</h2>
+        <button class="report-btn" id="student-report" onclick="generateLowAttendanceReport()">Generate Low Attendance Report</button>
+
+        <table id="attendance-table">
+          <thead>
+            <tr>
+              <th>Reg. No.</th>
+              <th>Name</th>
+              <th>Present</th>
+              <th>Absent</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Data will be dynamically inserted here -->
+          </tbody>
+        </table>
+        <button id="submit-btn" class="submit-btn" disabled>Submit</button>
+        <button id="clear-btn" class="clear-btn" disabled>
+          Clear Attendance
+        </button>
+      </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Low Attendance Report</h2>
+        <table id="reportTable">
+          <thead>
+            <tr>
+              <th>Reg. No.</th>
+              <th>Name</th>
+              <th>Present</th>
+              <th>Absent</th>
+              <th>Email</th>
+              <th>Mentor Email</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button class="report-btn" onclick="downloadPDF()">Download PDF</button>
+      </div>
+    </div>
+
+    <script>
+      // Initialize jsPDF
+      const { jsPDF } = window.jspdf;
+      
+      // Initialize attendance data
+      let attendanceData = [];
+      let lowAttendanceStudents = [];
+
+      // Function to fetch data from the server
+      function fetchAttendanceData() {
+        fetch("http://127.0.0.1:5000/api/attendance")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              populateTable(data.attendance);
+            } else {
+              alert("Error fetching attendance data.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error fetching attendance data.");
+          });
+      }
+
+      // Function to populate the table with student data
+      function populateTable(attendanceList) {
+        const tableBody = document.querySelector("#attendance-table tbody");
+        tableBody.innerHTML = ""; // Clear the table before populating
+
+        attendanceList.forEach((student) => {
+          const row = document.createElement("tr");
+
+          // Add student data to the row
+          row.innerHTML = `
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td><button class="btn present">Present</button></td>
+            <td><button class="btn absent">Absent</button></td>
+          `;
+
+          // Append the row to the table
+          tableBody.appendChild(row);
+
+          // Add event listeners to the buttons
+          row
+            .querySelector(".btn.present")
+            .addEventListener("click", function () {
+              handleAttendanceClick(student, "present", row);
+            });
+
+          row
+            .querySelector(".btn.absent")
+            .addEventListener("click", function () {
+              handleAttendanceClick(student, "absent", row);
+            });
+        });
+      }
+
+      // Function to handle button click for attendance
+      function handleAttendanceClick(student, status, row) {
+        // Add attendance data
+        attendanceData.push({
+          regNo: student.regNo,
+          name: student.name,
+          status: status,
+        });
+
+        // Disable the opposite button
+        row.querySelector(".btn.present").disabled = status === "absent";
+        row.querySelector(".btn.absent").disabled = status === "present";
+
+        // Change the clicked button's color
+        row
+          .querySelector(".btn.present")
+          .classList.toggle("disabled", status === "absent");
+        row
+          .querySelector(".btn.absent")
+          .classList.toggle("disabled", status === "present");
+
+        // Update submit button status
+        updateSubmitButtonStatus();
+      }
+
+      // Function to enable or disable the submit button
+      function updateSubmitButtonStatus() {
+        const submitBtn = document.getElementById("submit-btn");
+        submitBtn.disabled = attendanceData.length === 0;
+        document.getElementById("clear-btn").disabled =
+          attendanceData.length === 0;
+      }
+
+      // Handle form submission to send data to the server
+      document
+        .getElementById("submit-btn")
+        .addEventListener("click", function () {
+          fetch("http://127.0.0.1:5000/api/attendance", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ attendance: attendanceData }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("Attendance successfully submitted!");
+                attendanceData = []; // Reset attendance data
+                updateSubmitButtonStatus();
+                clearTable();
+              } else {
+                alert("Error submitting attendance.");
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Error submitting attendance.");
+            });
+        });
+
+      // Handle clear attendance button
+      document
+        .getElementById("clear-btn")
+        .addEventListener("click", function () {
+          attendanceData = [];
+          updateSubmitButtonStatus();
+          clearTable();
+        });
+
+      // Function to clear the table
+      function clearTable() {
+        const tableBody = document.querySelector("#attendance-table tbody");
+        const buttons = tableBody.querySelectorAll(".btn");
+        buttons.forEach((button) => {
+          // Re-enable all buttons
+          button.disabled = false;
+          button.classList.remove("disabled");
+        });
+        tableBody.innerHTML = ""; // Clear the table content
+        fetchAttendanceData(); // Re-fetch the data to re-enable buttons
+      }
+
+      // Fetch data when the page loads
+      window.onload = function () {
+        fetchAttendanceData();
+      };
+
+      // Function to generate low attendance report
+      function generateLowAttendanceReport() {
+        fetch("http://127.0.0.1:5000/api/attendance")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              lowAttendanceStudents = data.attendance.filter((student) => {
+                const total = student.present + student.absent;
+                const percentage = total > 0 ? (student.present / total) * 100 : 0;
+                return percentage < 60;
+              });
+
+              if (lowAttendanceStudents.length === 0) {
+                alert("No students with attendance below 60% found.");
+                return;
+              }
+
+              populateReportTable(lowAttendanceStudents);
+              openModal();
+            } else {
+              alert("Error fetching attendance data.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error fetching attendance data.");
+          });
+      }
+
+      // Function to populate the report table
+      function populateReportTable(students) {
+        const tbody = document.querySelector("#reportTable tbody");
+        tbody.innerHTML = ""; // Clear previous data
+
+        students.forEach((student) => {
+          const total = student.present + student.absent;
+          const percentage = total > 0 ? ((student.present / total) * 100).toFixed(2) : 0;
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td>${student.present}</td>
+            <td>${student.absent}</td>
+            <td>${student.email || 'N/A'}</td>
+            <td>${student.mentor_email || 'N/A'}</td>
+            <td>${percentage}%</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Function to open the modal
+      function openModal() {
+        document.getElementById("reportModal").style.display = "block";
+      }
+
+      // Function to close the modal
+      function closeModal() {
+        document.getElementById("reportModal").style.display = "none";
+      }
+
+      // Function to download PDF
+      function downloadPDF() {
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(18);
+        doc.text("Low Attendance Report (Below 60%)", 14, 20);
+        
+        // Add current date
+        const today = new Date();
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${today.toLocaleDateString()}`, 14, 30);
+        
+        // Add college name
+        doc.text("M. Kumarasamy College of Engineering, Karur", 14, 40);
+        
+        // Prepare data for the table
+        const tableData = lowAttendanceStudents.map(student => {
+          const total = student.present + student.absent;
+          const percentage = total > 0 ? ((student.present / total) * 100).toFixed(2) : 0;
+          
+          return [
+            student.regNo,
+            student.name,
+            student.present,
+            student.absent,
+            student.email || 'N/A',
+            student.mentor_email || 'N/A',
+            `${percentage}%`
+          ];
+        });
+        
+        // Add table
+        doc.autoTable({
+          startY: 50,
+          head: [['Reg. No.', 'Name', 'Present', 'Absent', 'Email', 'Mentor Email', 'Percentage']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [74, 163, 216] // Matching your table header color
+          },
+          margin: { top: 50 }
+        });
+        
+        // Save the PDF
+        doc.save(`Low_Attendance_Report_${today.toISOString().slice(0,10)}.pdf`);
+      }
+
+      // Close modal when clicking outside of it
+      window.onclick = function(event) {
+        const modal = document.getElementById("reportModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
+    </script>
+  </body>
+</html>

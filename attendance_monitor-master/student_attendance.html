@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CAMS - Web Portal | Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        height: 100vh;
+      }
+      /* Sidebar styling */
+      .sidebar {
+        width: 250px;
+        background-color: #2b3d71;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+      }
+      .sidebar h3 {
+        margin: 0;
+        padding: 15px;
+        background-color: #4b6bbd;
+        text-align: center;
+      }
+      .sidebar p {
+        font-size: 14px;
+        text-align: center;
+        margin: 10px 0;
+      }
+      .sidebar a {
+        color: #f2f2f2;
+        text-decoration: none;
+        padding: 10px;
+        display: block;
+        margin: 5px 0;
+        border-radius: 4px;
+      }
+      .sidebar a:hover {
+        background-color: #1d2c5b;
+      }
+      .sidebar .menu-header {
+        /* background-color: #d9534f; */
+        padding: 10px;
+        font-weight: bold;
+        color: white;
+        margin-top: 10px;
+        border-radius: 4px;
+      }
+      .sidebar .menu-header-a {
+        background-color: #d9534f;
+        padding: 10px;
+        font-weight: bold;
+        color: white;
+        margin-top: 10px;
+        border-radius: 4px;
+      }
+      /* Main content styling */
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+        background-color: #f1f1f1;
+      }
+      .main-header {
+        background-color: #4aa3d8;
+        color: white;
+        padding: 15px;
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #d4d4d4;
+      }
+      .profile {
+        display: flex;
+        align-items: center;
+      }
+      .profile img {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+      }
+
+      .attendance-pie-chart {
+        width: 80%; /* Set width percentage */
+        max-width: 280px; /* Slightly reduce the maximum width */
+        margin: 10px auto; /* Center the chart and provide some spacing */
+        display: block; /* Ensure it behaves like a block element */
+      }
+
+      #attendance-info {
+        text-align: center; /* Center-align all content inside this section */
+        padding: 10px;
+      }
+
+      canvas {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+        border-radius: 8px; /* Round edges for the canvas */
+        background-color: white; /* Add a background for contrast */
+        padding: 5px;
+      }
+      .download-btn {
+        display: block;
+        margin: 20px auto;
+        padding: 10px 15px;
+        font-size: 16px;
+        background-color: #4b6bbd;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      .download-btn:hover {
+        background-color: #1d2c5b;
+      }
+    </style>
+    <!-- Include Chart.js library -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <!-- Include Chart.js, jsPDF, and html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3>CAMS Web Portal</h3>
+      <p>For any Queries/Comments<br />mail to cams@mkce.ac.in</p>
+
+      <!-- <div class="menu-header">Student</div> -->
+      <a href="student_dashboard.html" class="menu-header">Student</a>
+      <a href="student_attendance.html" class="menu-header-a">Attendance</a>
+      <a href="login.html">Log Out</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="main-header">
+        <span>M. KUMARASAMY COLLEGE OF ENGINEERING, KARUR - 639 113</span>
+
+        <!-- Display student name here -->
+        <span id="student-name">STUDENT</span>
+      </div>
+      <!-- Attendance Section -->
+      <div>
+        <h3>Attendance Information:</h3>
+        <div id="attendance-info">
+          <p>Loading attendance...</p>
+          <!-- Canvas for pie chart -->
+        </div>
+        <div>
+          <canvas
+            id="attendance-pie-chart"
+            class="attendance-pie-chart"
+          ></canvas>
+        </div>
+
+
+        <button class="download-btn" onclick="downloadPDF()">Download as PDF</button>
+
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const studentName = localStorage.getItem("loggedInUserName");
+        if (studentName) {
+          document.getElementById("student-name").textContent = studentName; // Display the student's name
+        }
+
+        // Fetch student attendance data from the API
+        const studentId = localStorage.getItem("loggedInUserName");
+
+        if (studentId) {
+          fetch(`http://127.0.0.1:5000/api/attendance_one_student/${studentId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data); // For debugging, log the response from the API
+              const attendanceInfo = document.getElementById("attendance-info");
+
+              if (data) {
+                const present = data.present;
+                const absent = data.absent;
+                const totalAttendance = present + absent;
+                const presentPercentage = (present / totalAttendance) * 100;
+                const absentPercentage = (absent / totalAttendance) * 100;
+
+                // attendanceInfo.innerHTML = `
+                //   <p>Attendance Percentage: ${presentPercentage.toFixed(2)}%</p>
+                //   <p>Last Attended: ${new Date().toLocaleDateString()}</p>
+                // `;
+
+                // Prepare data for the pie chart
+                const chartData = {
+                  labels: ["Present", "Absent"],
+                  datasets: [
+                    {
+                      data: [presentPercentage, absentPercentage],
+                      backgroundColor: ["#36A2EB", "#FF6384"], // Blue for present, red for absent
+                      hoverBackgroundColor: ["#5D8BF4", "#FF7A92"], // Lighter shades on hover
+                    },
+                  ],
+                };
+
+                const canvas = document.getElementById("attendance-pie-chart");
+
+                if (canvas) {
+                  const ctx = canvas.getContext("2d");
+
+                  // Create the pie chart
+                  const chart = new Chart(ctx, {
+                    type: "pie", // Pie chart type
+                    data: chartData,
+                    options: {
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "right", // Move legend to the right for better visibility
+                          labels: {
+                            font: {
+                              size: 14, // Adjust font size
+                              family: "Arial", // Match your website's font
+                              weight: "bold",
+                            },
+                            boxWidth: 15, // Smaller legend box size
+                            padding: 10, // Adjust padding between items
+                          },
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function (tooltipItem) {
+                              return (
+                                tooltipItem.label +
+                                ": " +
+                                tooltipItem.raw.toFixed(2) +
+                                "%" // Show percentage in tooltips
+                              );
+                            },
+                          },
+                          backgroundColor: "#fff", // Tooltip background color
+                          titleColor: "#000", // Title color
+                          bodyColor: "#000", // Text color
+                          borderColor: "#ccc", // Border around tooltip
+                          borderWidth: 1,
+                        },
+                      },
+                    },
+                  });
+                } else {
+                  console.error("Canvas element not found!");
+                }
+                // Update the attendance info section with details
+                attendanceInfo.innerHTML = `
+            <p><strong>Total Attendance:</strong> ${totalAttendance}</p>
+            <p><strong>Present:</strong> ${present} (${presentPercentage.toFixed(
+                  2
+                )}%)</p>
+            <p><strong>Absent:</strong> ${absent} (${absentPercentage.toFixed(
+                  2
+                )}%)</p>
+            <p><strong>Last Attended:</strong> ${new Date().toLocaleDateString()}</p>
+          `;
+              } else {
+                attendanceInfo.innerHTML =
+                  "<p>No attendance data available.</p>";
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching attendance data:", error);
+              const attendanceInfo = document.getElementById("attendance-info");
+              attendanceInfo.innerHTML =
+                "<p>Failed to load attendance data. Please try again later.</p>";
+            });
+        }
+      });
+      function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Get Student Name
+    const studentName = localStorage.getItem("loggedInUserName") || "Unknown Student";
+
+    // College Logo (Top Left)
+    const logoImg = new Image();
+    logoImg.src = "college_logo.jpg"; // Add your college logo path
+
+    logoImg.onload = function () {
+        // Add Logo at Top Left
+        doc.addImage(logoImg, "JPG", 10, 10, 50, 20); // Adjust width & height as needed
+
+        // Title: Attendance Report (Centered Below Logo)
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("Attendance Report", 105, 40, null, null, "center");
+
+        // Student Name (Below Title, Centered)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.text(`Register Number: ${studentName}`, 105, 50, null, null, "center");
+
+        // Capture the Chart
+        html2canvas(document.getElementById("attendance-pie-chart")).then((canvas) => {
+            const imgData = canvas.toDataURL("image/png");
+            doc.addImage(imgData, "PNG", 60, 60, 100, 80); // Chart Position
+
+            // Fetch attendance information
+            const info = document.getElementById("attendance-info").innerText.split("\n");
+            doc.setFontSize(12);
+
+            let yPosition = 150; // Position below the chart
+            doc.text("Attendance Details:", 86, yPosition);
+            doc.setFontSize(10);
+            yPosition += 8;
+
+            info.forEach((line) => {
+                doc.text(line, 88, yPosition);
+                yPosition += 4; // Spacing
+            });
+
+            // Save the PDF
+            doc.save(`${studentName}_attendance_report.pdf`);
+        });
+    };
+}
+
+
+    </script>
+  </body>
+</html>
